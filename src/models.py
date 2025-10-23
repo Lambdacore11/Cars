@@ -1,32 +1,26 @@
 from decimal import Decimal
-from sqlmodel import SQLModel, CheckConstraint, Field, Relationship
-from pydantic import field_validator
+from sqlmodel import SQLModel, CheckConstraint, Field, Relationship, UniqueConstraint
+from sqlalchemy import event
 from .schemas import CAR_NAME_SCHEMA, CAR_COLOR_SCHEMA, MANUFACTURER_NAME_SCHEMA
 
 
 class ManufacturerBase(SQLModel):
     name: str = Field(
-        index=True, max_length=50,
+        index=True,
+        max_length=50,
+        unique=True,
         schema_extra=MANUFACTURER_NAME_SCHEMA
     )
 
-    @field_validator('name', mode='before')
-    @classmethod
-    def validate_name(cls, v):
-        if isinstance(v, str):
-            return v.lower().strip()
-        return v
-
 class Manufacturer(ManufacturerBase, table=True):
     __tablename__ = 'manufacturers'
+
     id: int | None = Field(default=None, primary_key=True)
     cars: list['Car'] = Relationship(back_populates="manufacturer")
 
     __table_args__ = (
-        CheckConstraint(
-            "name ~ '^[a-zA-Z\\-]+$'",
-            name='check_manufacturer_name_regex'
-        ),
+        CheckConstraint("name ~ '^[a-z\\-]+$'",name='check_manufacturer_name_regex'),
+        UniqueConstraint('name', name='check_manufacturer_unique_name'),
     )
 
 class ManufacturerPublic(ManufacturerBase):
@@ -40,14 +34,6 @@ class ManufacturerUpdate(SQLModel):
         default=None, max_length=50,
         schema_extra=MANUFACTURER_NAME_SCHEMA
     )
-
-    @field_validator('name', mode='before')
-    @classmethod
-    def validate_name(cls, v):
-        if v is not None and isinstance(v, str):
-            return v.lower().strip()
-        return v
-
 
 class CarBase(SQLModel):
     name: str = Field(
@@ -66,15 +52,9 @@ class CarBase(SQLModel):
         decimal_places=2,
         ge=Decimal('0'))
 
-    @field_validator('name','color', mode='before')
-    @classmethod
-    def validate_name(cls, v):
-        if isinstance(v, str):
-            return v.lower().strip()
-        return v
-
 class Car(CarBase, table=True):
     __tablename__ = 'cars'
+
     id: int | None = Field(
         default=None,
         primary_key=True
@@ -86,28 +66,21 @@ class Car(CarBase, table=True):
     manufacturer: Manufacturer = Relationship(back_populates='cars')
 
     __table_args__ = (
-        CheckConstraint("name ~ '^[a-zA-Z0-9\\-]+$'", name='check_car_name_regex'),
-        CheckConstraint("color ~ '^[a-zA-Z\\-]+$'", name='check_car_color_regex'),
+        CheckConstraint("name ~ '^[a-z0-9\\-]+$'", name='check_car_name_regex'),
+        CheckConstraint("color ~ '^[a-z\\-]+$'", name='check_car_color_regex'),
         CheckConstraint('price >= 0', name='check_price_positive'),
     )
 
 class CarPublic(CarBase):
     id: int
     manufacturer_id : int
-    manufacturer_name: str
+    manufacturer_name: str | None = None
 
 class CarCreate(CarBase):
     manufacturer_name: str = Field(
         max_length=50,
         schema_extra=MANUFACTURER_NAME_SCHEMA
     )
-
-    @field_validator('manufacturer_name', mode='before')
-    @classmethod
-    def validate_name(cls, v):
-        if isinstance(v, str):
-            return v.lower().strip()
-        return v
 
 class CarUpdate(SQLModel):
     name: str | None = Field(
@@ -129,9 +102,17 @@ class CarUpdate(SQLModel):
         schema_extra=MANUFACTURER_NAME_SCHEMA
     )
 
-    @field_validator('name', 'color', 'manufacturer_name', mode='before')
-    @classmethod
-    def validate_name(cls, v):
-        if v is not None and isinstance(v, str):
-            return v.lower().strip()
-        return v
+@event.listens_for(Manufacturer, 'before_insert')
+@event.listens_for(Manufacturer, 'before_update')
+def normalize_manufacturer_name(_mapper, _connection, target):
+    if target.name and isinstance(target.name, str):
+        target.name = target.name.lower().strip()
+
+@event.listens_for(Car, 'before_insert')
+@event.listens_for(Car, 'before_update')
+def normalize_car_fields(_mapper, _connection, target):
+    if target.name and isinstance(target.name, str):
+        target.name = target.name.lower().strip()
+
+    if target.color and isinstance(target.color, str):
+        target.color = target.color.lower().strip()
