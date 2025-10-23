@@ -1,19 +1,12 @@
-import os
 from typing import Annotated, AsyncGenerator
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlmodel import SQLModel
+from .settings import settings
 
 
 async_engine = create_async_engine(
-    url=
-        (
-            f'postgresql+asyncpg://'
-            f'{os.environ.get('POSTGRES_USER')}:'
-            f'{os.environ.get('POSTGRES_PASSWORD')}@'
-            f'{os.environ.get('POSTGRES_HOST')}/'
-            f'{os.environ.get('POSTGRES_DB')}'
-    ),
+    settings.DATABASE_URL,
     future=True
 )
 
