@@ -23,6 +23,6 @@ async_session = async_sessionmaker(
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session() as session:
-        yield session        
+        yield session
 
 SessionDep = Annotated[AsyncSession, Depends(get_async_session)]
