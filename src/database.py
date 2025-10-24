@@ -8,7 +8,7 @@ from .settings import settings
 
 
 async_engine = create_async_engine(
-    settings.DATABASE_URL,
+    settings.database_url,
     future=True
 )
 

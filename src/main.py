@@ -1,19 +1,7 @@
 "Main module"
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from .database import init_db, async_engine
 from .routers.cars import cars_router
 from .routers.manufacturers import manufacturer_router
-from . import models  # noqa: F401 pylint: disable=unused-import
-
-
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
-    '''Lifespan manager'''
-    await init_db()
-    yield
-
-    await async_engine.dispose()
 
 
 app = FastAPI(
@@ -21,7 +9,6 @@ app = FastAPI(
     title='Cars',
     description='REST API for managing cars and manufacturers',
     version='0.1.0',
-    lifespan=lifespan
 )
 
 

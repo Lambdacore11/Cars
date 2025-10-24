@@ -1,0 +1,7 @@
+.git/
+.gitignore
+Dockerfile
+compose.yaml
+.dockerignore
+.env
+venv/

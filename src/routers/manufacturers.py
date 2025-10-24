@@ -3,7 +3,8 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from ..database import SessionDep
 from ..models import Manufacturer, ManufacturerPublic, \
-                        ManufacturerCreate, ManufacturerUpdate
+                        ManufacturerCreate, ManufacturerUpdate, \
+                        Car
 
 
 manufacturer_router = APIRouter(
@@ -139,7 +140,16 @@ async def delete_manufacturer(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Manufacturer not found'
         )
-
+    car_result = await session.execute(
+        select(Car.manufacturer_id)
+        .where(Car.manufacturer_id == manufacturer.id)
+    )
+    if car_result.scalars().first():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Can\'t remove manufacturer'
+            ' when at least one car depends on it'
+        )
     await session.delete(manufacturer)
     await session.commit()
 
