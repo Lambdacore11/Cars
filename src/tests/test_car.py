@@ -1,3 +1,4 @@
+'''Modyle for testing car endpoints'''
 # # pylint: disable=redefined-outer-name
 from typing import TypedDict
 import pytest
@@ -5,13 +6,16 @@ from httpx import AsyncClient
 
 
 class CarDict(TypedDict):
+    '''Custom annotation for sample car data'''
     name: str
     color: str
     price: str
     manufacturer_name: str
 
+
 @pytest.fixture
 def sample_car():
+    '''sample for testing car'''
     return {
         'name': 'test-car',
         'color': 'red',
@@ -19,23 +23,27 @@ def sample_car():
         'manufacturer_name': 'test-manufacturer'
     }
 
+
 @pytest.fixture
 def sample_car2():
+    '''second sample for testing car'''
     return {
         'name': 'test-car-2',
-        'color': 'blue', 
+        'color': 'blue',
         'price': '4000.00',
         'manufacturer_name': 'test-manufacturer-two'
     }
 
 
 class TestCarCreate:
+    '''Test car creation operation'''
     @pytest.mark.asyncio
     async def test_create_car(
         self,
-        client : AsyncClient,
+        client: AsyncClient,
         sample_car: CarDict
     ):
+        '''Test car creation'''
         response = await client.post('/cars', json=sample_car)
         data = response.json()
         assert response.status_code == 201
@@ -45,9 +53,9 @@ class TestCarCreate:
         assert data['manufacturer_name'] == sample_car['manufacturer_name']
         assert 'id' in data
 
-
     @pytest.mark.asyncio
     async def test_create_car_uppercase_conversion(self, client: AsyncClient):
+        '''Test uppercase conversion'''
         car_data = {
             'name': 'TEST-CAR',
             'color': 'RED',
@@ -70,7 +78,12 @@ class TestCarCreate:
         assert get_data['manufacturer_name'] == 'test-manufacturer'
 
     @pytest.mark.asyncio
-    async def test_create_car_with_new_manufacturer(self, client: AsyncClient, sample_car: CarDict):
+    async def test_create_car_with_new_manufacturer(
+        self,
+        client: AsyncClient,
+        sample_car: CarDict
+    ):
+        '''Test car creation with not existing manufacturer'''
         post_response = await client.post('/cars', json=sample_car)
         post_data = post_response.json()
         manufacturer_id = post_data['manufacturer_id']
@@ -87,6 +100,7 @@ class TestCarCreate:
         sample_car: CarDict,
         sample_car2: CarDict
     ):
+        '''Test creation with already existing manufacturer'''
         sample_car2['manufacturer_name'] = sample_car['manufacturer_name']
         await client.post('/cars', json=sample_car)
         post_response = await client.post('/cars', json=sample_car2)
@@ -98,9 +112,9 @@ class TestCarCreate:
         assert get_response.status_code == 200
         assert get_data['name'] == sample_car['manufacturer_name']
 
-
     @pytest.mark.asyncio
     async def test_create_car_invalid_name(self, client: AsyncClient):
+        '''Test car creation with name out of regex pattern'''
         car_data = {
             'name': 'test@car',
             'color': 'red',
@@ -112,10 +126,11 @@ class TestCarCreate:
 
     @pytest.mark.asyncio
     async def test_create_car_invalid_color(self, client: AsyncClient):
+        '''Test car creation with color out of regex pattern'''
         car_data = {
             'name': 'test-car',
             'color': 'red123',
-            'price': '30000.00', 
+            'price': '30000.00',
             'manufacturer_name': 'test-manufacturer'
         }
         response = await client.post('/cars', json=car_data)
@@ -123,8 +138,14 @@ class TestCarCreate:
 
 
 class TestCarRead:
+    '''Test car information retrive operations'''
     @pytest.mark.asyncio
-    async def test_get_single_car(self, client: AsyncClient, sample_car: CarDict):
+    async def test_get_single_car(
+        self,
+        client: AsyncClient,
+        sample_car: CarDict
+    ):
+        '''Test geting car by id'''
         post_response = await client.post('/cars', json=sample_car)
         car_id = post_response.json()['id']
 
@@ -137,6 +158,7 @@ class TestCarRead:
 
     @pytest.mark.asyncio
     async def test_get_car_not_found(self, client: AsyncClient):
+        '''Test for not existing car'''
         response = await client.get('/cars/9999')
         data = response.json()
         assert response.status_code == 404
@@ -149,6 +171,7 @@ class TestCarRead:
         sample_car: CarDict,
         sample_car2: CarDict
     ):
+        '''Test for all cars retrival'''
         await client.post('/cars', json=sample_car)
         await client.post('/cars', json=sample_car2)
 
@@ -165,6 +188,7 @@ class TestCarRead:
         sample_car: CarDict,
         sample_car2: CarDict
     ):
+        '''Test geting cars by name '''
         await client.post('/cars', json=sample_car)
         await client.post('/cars', json=sample_car2)
 
@@ -181,6 +205,7 @@ class TestCarRead:
         sample_car: CarDict,
         sample_car2: CarDict
     ):
+        '''Test geting cars by color'''
         await client.post('/cars', json=sample_car)
         await client.post('/cars', json=sample_car2)
 
@@ -197,17 +222,26 @@ class TestCarRead:
         sample_car: CarDict,
         sample_car2: CarDict
     ):
+        '''Test geting cars by manufacturer'''
         await client.post('/cars', json=sample_car)
         await client.post('/cars', json=sample_car2)
 
-        response = await client.get('/cars', params={'manufacturer': 'test-manufacturer'})
+        response = await client.get(
+            '/cars',
+            params={'manufacturer': 'test-manufacturer'}
+        )
         data = response.json()
         assert response.status_code == 200
         assert len(data) == 1
         assert data[0]['manufacturer_name'] == 'test-manufacturer'
 
     @pytest.mark.asyncio
-    async def test_get_cars_multiple_filters(self, client: AsyncClient, sample_car: CarDict):
+    async def test_get_cars_multiple_filters(
+        self,
+        client: AsyncClient,
+        sample_car: CarDict
+    ):
+        '''Test geting cars wirh multiple query parameters'''
         await client.post('/cars', json=sample_car)
 
         response = await client.get('/cars', params={
@@ -224,8 +258,10 @@ class TestCarRead:
 
 
 class TestCarUpdate:
+    '''Test car update operation'''
     @pytest.mark.asyncio
     async def test_update_car(self, client: AsyncClient, sample_car: CarDict):
+        '''Test basic update cycle'''
         post_response = await client.post('/cars', json=sample_car)
         car_id = post_response.json()['id']
 
@@ -243,7 +279,12 @@ class TestCarUpdate:
         assert data['price'] == '35000.00'
 
     @pytest.mark.asyncio
-    async def test_update_car_manufacturer(self, client: AsyncClient, sample_car: CarDict):
+    async def test_update_car_manufacturer(
+        self,
+        client: AsyncClient,
+        sample_car: CarDict
+    ):
+        '''Test updating with new manufacturer'''
         post_response = await client.post('/cars', json=sample_car)
         car_id = post_response.json()['id']
 
@@ -256,7 +297,12 @@ class TestCarUpdate:
         assert data['manufacturer_name'] == 'new-manufacturer'
 
     @pytest.mark.asyncio
-    async def test_update_car_partial(self, client: AsyncClient, sample_car: CarDict):
+    async def test_update_car_partial(
+        self,
+        client: AsyncClient,
+        sample_car: CarDict
+    ):
+        '''Testing partial update'''
         post_response = await client.post('/cars', json=sample_car)
         car_id = post_response.json()['id']
 
@@ -271,6 +317,7 @@ class TestCarUpdate:
 
     @pytest.mark.asyncio
     async def test_update_car_not_found(self, client: AsyncClient):
+        '''Test update not existing car'''
         update_data = {'name': 'updated'}
         response = await client.put('/cars/9999', json=update_data)
         data = response.json()
@@ -279,8 +326,10 @@ class TestCarUpdate:
 
 
 class TestCarDelete:
+    '''Tests for Car delete operation'''
     @pytest.mark.asyncio
     async def test_delete_car(self, client: AsyncClient, sample_car: CarDict):
+        '''Test delete cycle'''
         post_response = await client.post('/cars', json=sample_car)
         car_id = post_response.json()['id']
 
@@ -294,6 +343,7 @@ class TestCarDelete:
 
     @pytest.mark.asyncio
     async def test_delete_car_not_found(self, client: AsyncClient):
+        '''Test making sure deleted car can't be accsessed'''
         response = await client.delete('/cars/9999')
         data = response.json()
         assert response.status_code == 404

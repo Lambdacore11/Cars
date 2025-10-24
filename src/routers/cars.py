@@ -1,12 +1,14 @@
+'''Cars router'''
 from typing import Annotated
 from fastapi import APIRouter, HTTPException, status, Query
 from sqlalchemy import select
 from ..database import SessionDep
 from ..models import Car, CarPublic, CarCreate, CarUpdate, Manufacturer
-from ..schemas import NAME_WITH_DIGITS,NAME_WITHOUT_DIGITS
+from ..schemas import NAME_WITH_DIGITS, NAME_WITHOUT_DIGITS
 
 
 cars_router = APIRouter(prefix='/cars', tags=['cars'])
+
 
 @cars_router.post(
     '',
@@ -17,6 +19,7 @@ async def create_car(
     session: SessionDep,
     new_car: CarCreate
 ):
+    '''Create new car'''
     input_manufacturer_name = new_car.manufacturer_name.lower()
     manufacturer_result = await session.execute(
         select(Manufacturer)
@@ -40,6 +43,7 @@ async def create_car(
         {**car.model_dump(), 'manufacturer_name': input_manufacturer_name}
     )
 
+
 @cars_router.get(
     '/{car_id}',
     response_model=CarPublic,
@@ -49,6 +53,7 @@ async def read_car(
     session: SessionDep,
     car_id: int
 ):
+    '''Read single car'''
     result = await session.execute(
         select(Car, Manufacturer.name)
         .join(Manufacturer)
@@ -66,6 +71,7 @@ async def read_car(
         {**car.model_dump(), 'manufacturer_name': manufacturer_name}
     )
 
+
 @cars_router.get(
     '',
     response_model=list[CarPublic],
@@ -73,10 +79,20 @@ async def read_car(
 )
 async def read_cars(
     session: SessionDep,
-    name: Annotated[str | None, Query(max_length=50, pattern=NAME_WITH_DIGITS)] = None,
-    color: Annotated[str | None, Query(max_length=50, pattern=NAME_WITHOUT_DIGITS)] = None,
-    manufacturer: Annotated[str | None, Query(max_length=50, pattern=NAME_WITHOUT_DIGITS)] = None
+    name: Annotated[
+        str | None,
+        Query(max_length=50, pattern=NAME_WITH_DIGITS)
+    ] = None,
+    color: Annotated[
+        str | None,
+        Query(max_length=50, pattern=NAME_WITHOUT_DIGITS)
+    ] = None,
+    manufacturer: Annotated[
+        str | None,
+        Query(max_length=50, pattern=NAME_WITHOUT_DIGITS)
+    ] = None
 ):
+    '''Read multiple cars'''
     query = select(Car, Manufacturer.name).join(Manufacturer)
 
     if name:
@@ -98,6 +114,7 @@ async def read_cars(
         for car, manufacturer_name in rows
     ]
 
+
 @cars_router.put(
     '/{car_id}',
     response_model=CarPublic,
@@ -108,6 +125,7 @@ async def update_car(
     car_id: int,
     new_car_data: CarUpdate
 ):
+    '''Update car'''
     car_result = await session.execute(
         select(Car)
         .where(Car.id == car_id)
@@ -154,6 +172,7 @@ async def update_car(
         {**car.model_dump(), 'manufacturer_name': manufacturer_name}
     )
 
+
 @cars_router.delete(
     '/{car_id}',
     status_code=status.HTTP_200_OK
@@ -162,6 +181,7 @@ async def delete_car(
     session: SessionDep,
     car_id: int
 ):
+    '''Delete car'''
     result = await session.execute(
         select(Car)
         .where(Car.id == car_id)
@@ -178,4 +198,4 @@ async def delete_car(
     await session.delete(car)
     await session.commit()
 
-    return {'message' : 'deleted'}
+    return {'message': 'deleted'}

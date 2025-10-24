@@ -1,17 +1,23 @@
+'''Models module'''
 from decimal import Decimal
-from sqlmodel import SQLModel, CheckConstraint, Field, Relationship, UniqueConstraint
+from sqlmodel import SQLModel, CheckConstraint, Field, Relationship, \
+                        UniqueConstraint
 from sqlalchemy import event
-from .schemas import CAR_NAME_SCHEMA, CAR_COLOR_SCHEMA, MANUFACTURER_NAME_SCHEMA
+from .schemas import CAR_NAME_SCHEMA, CAR_COLOR_SCHEMA, \
+                        MANUFACTURER_NAME_SCHEMA
 
 
 class ManufacturerBase(SQLModel):
+    '''Base class for Manufacturer'''
     name: str = Field(
         index=True,
         max_length=50,
         schema_extra=MANUFACTURER_NAME_SCHEMA
     )
 
+
 class Manufacturer(ManufacturerBase, table=True):
+    '''Database representation for Manufacturer'''
     __tablename__ = 'manufacturers'
 
     id: int | None = Field(default=None, primary_key=True)
@@ -21,19 +27,26 @@ class Manufacturer(ManufacturerBase, table=True):
         UniqueConstraint('name', name='check_manufacturer_unique_name'),
     )
 
+
 class ManufacturerPublic(ManufacturerBase):
-    id : int
+    '''Public class for Manufacturer'''
+    id: int
+
 
 class ManufacturerCreate(ManufacturerBase):
-    pass
+    '''Class for Manufacturer creation'''
+
 
 class ManufacturerUpdate(SQLModel):
+    '''Class for uupdate Manufacturer'''
     name: str | None = Field(
         default=None, max_length=50,
         schema_extra=MANUFACTURER_NAME_SCHEMA
     )
 
+
 class CarBase(SQLModel):
+    '''Base class for Car'''
     name: str = Field(
         index=True,
         max_length=50,
@@ -50,7 +63,9 @@ class CarBase(SQLModel):
         decimal_places=2,
         ge=Decimal('0'))
 
+
 class Car(CarBase, table=True):
+    '''Database representation for Car'''
     __tablename__ = 'cars'
 
     id: int | None = Field(
@@ -67,18 +82,24 @@ class Car(CarBase, table=True):
         CheckConstraint('price >= 0', name='check_price_positive'),
     )
 
+
 class CarPublic(CarBase):
+    '''Public class for Car'''
     id: int
-    manufacturer_id : int
-    manufacturer_name: str | None = None
+    manufacturer_id: int
+    manufacturer_name: str
+
 
 class CarCreate(CarBase):
+    '''Class for Car creation'''
     manufacturer_name: str = Field(
         max_length=50,
         schema_extra=MANUFACTURER_NAME_SCHEMA
     )
 
+
 class CarUpdate(SQLModel):
+    '''Class for Car update'''
     name: str | None = Field(
         default=None, max_length=50,
         schema_extra=CAR_NAME_SCHEMA
@@ -98,15 +119,19 @@ class CarUpdate(SQLModel):
         schema_extra=MANUFACTURER_NAME_SCHEMA
     )
 
+
 @event.listens_for(Manufacturer, 'before_insert')
 @event.listens_for(Manufacturer, 'before_update')
 def normalize_manufacturer_name(_mapper, _connection, target):
+    '''Lowercase Manufacturer name before commiting to database'''
     if target.name and isinstance(target.name, str):
         target.name = target.name.lower().strip()
+
 
 @event.listens_for(Car, 'before_insert')
 @event.listens_for(Car, 'before_update')
 def normalize_car_fields(_mapper, _connection, target):
+    '''Lowercase Car name and color before commiting to database'''
     if target.name and isinstance(target.name, str):
         target.name = target.name.lower().strip()
 

@@ -1,10 +1,15 @@
+'''Manufacturers router'''
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
 from ..database import SessionDep
-from ..models import Manufacturer, ManufacturerPublic, ManufacturerCreate, ManufacturerUpdate
+from ..models import Manufacturer, ManufacturerPublic, \
+                        ManufacturerCreate, ManufacturerUpdate
 
 
-manufacturer_router = APIRouter(prefix='/manufacturers', tags=['manufacturers'])
+manufacturer_router = APIRouter(
+    prefix='/manufacturers',
+    tags=['manufacturers']
+)
 
 
 @manufacturer_router.post(
@@ -16,6 +21,7 @@ async def create_manufacturer(
     session: SessionDep,
     new_manufacturer: ManufacturerCreate
 ):
+    '''Create new manufacturer'''
     result = await session.execute(
         select(Manufacturer.name)
         .where(Manufacturer.name == new_manufacturer.name.lower())
@@ -26,7 +32,7 @@ async def create_manufacturer(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail='Manufacturer with that name already exists'
         )
-    
+
     manufacturer = Manufacturer.model_validate(new_manufacturer)
     session.add(manufacturer)
     await session.commit()
@@ -43,6 +49,7 @@ async def read_manufacturer(
     session: SessionDep,
     manufacturer_id: int
 ):
+    '''Read single manufacturer'''
     result = await session.execute(
         select(Manufacturer)
         .where(Manufacturer.id == manufacturer_id)
@@ -67,6 +74,7 @@ async def read_manufacturer(
 async def read_manufacturers(
     session: SessionDep,
 ):
+    '''Read multiple manufacturers'''
     result = await session.execute(
         select(Manufacturer)
     )
@@ -86,6 +94,7 @@ async def update_manufacturer(
     manufacturer_id: int,
     new_manufacturer_data: ManufacturerUpdate
 ):
+    '''Update manufacturer'''
     result = await session.execute(
         select(Manufacturer)
         .where(Manufacturer.id == manufacturer_id)
@@ -117,6 +126,7 @@ async def delete_manufacturer(
     session: SessionDep,
     manufacturer_id: int
 ):
+    '''Delete manufacturer'''
     result = await session.execute(
         select(Manufacturer)
         .where(Manufacturer.id == manufacturer_id)
@@ -133,4 +143,4 @@ async def delete_manufacturer(
     await session.delete(manufacturer)
     await session.commit()
 
-    return {'message' : 'deleted'}
+    return {'message': 'deleted'}
