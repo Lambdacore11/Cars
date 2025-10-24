@@ -9,7 +9,7 @@ from ..schemas import NAME_WITH_DIGITS,NAME_WITHOUT_DIGITS
 cars_router = APIRouter(prefix='/cars', tags=['cars'])
 
 @cars_router.post(
-    '/',
+    '',
     response_model=CarPublic,
     status_code=status.HTTP_201_CREATED
 )
@@ -17,7 +17,7 @@ async def create_car(
     session: SessionDep,
     new_car: CarCreate
 ):
-    input_manufacturer_name = new_car.manufacturer_name
+    input_manufacturer_name = new_car.manufacturer_name.lower()
     manufacturer_result = await session.execute(
         select(Manufacturer)
         .where(Manufacturer.name == input_manufacturer_name)
@@ -67,7 +67,7 @@ async def read_car(
     )
 
 @cars_router.get(
-    '/',
+    '',
     response_model=list[CarPublic],
     status_code=status.HTTP_200_OK
 )
