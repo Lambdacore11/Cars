@@ -8,7 +8,7 @@ manufacturer_router = APIRouter(prefix='/manufacturers', tags=['manufacturers'])
 
 
 @manufacturer_router.post(
-    '/',
+    '',
     response_model=ManufacturerPublic,
     status_code=status.HTTP_201_CREATED
 )
@@ -16,6 +16,17 @@ async def create_manufacturer(
     session: SessionDep,
     new_manufacturer: ManufacturerCreate
 ):
+    result = await session.execute(
+        select(Manufacturer.name)
+        .where(Manufacturer.name == new_manufacturer.name.lower())
+    )
+
+    if result.scalars().first() is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Manufacturer with that name already exists'
+        )
+    
     manufacturer = Manufacturer.model_validate(new_manufacturer)
     session.add(manufacturer)
     await session.commit()
@@ -49,7 +60,7 @@ async def read_manufacturer(
 
 
 @manufacturer_router.get(
-    '/',
+    '',
     response_model=list[ManufacturerPublic],
     status_code=status.HTTP_200_OK
 )

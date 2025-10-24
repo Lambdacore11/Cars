@@ -8,7 +8,6 @@ class ManufacturerBase(SQLModel):
     name: str = Field(
         index=True,
         max_length=50,
-        unique=True,
         schema_extra=MANUFACTURER_NAME_SCHEMA
     )
 
@@ -19,7 +18,6 @@ class Manufacturer(ManufacturerBase, table=True):
     cars: list['Car'] = Relationship(back_populates="manufacturer")
 
     __table_args__ = (
-        CheckConstraint("name ~ '^[a-z\\-]+$'",name='check_manufacturer_name_regex'),
         UniqueConstraint('name', name='check_manufacturer_unique_name'),
     )
 
@@ -66,8 +64,6 @@ class Car(CarBase, table=True):
     manufacturer: Manufacturer = Relationship(back_populates='cars')
 
     __table_args__ = (
-        CheckConstraint("name ~ '^[a-z0-9\\-]+$'", name='check_car_name_regex'),
-        CheckConstraint("color ~ '^[a-z\\-]+$'", name='check_car_color_regex'),
         CheckConstraint('price >= 0', name='check_price_positive'),
     )
 
