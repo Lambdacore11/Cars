@@ -5,6 +5,7 @@ from pydantic import ConfigDict
 
 class Settings(BaseSettings):
     '''Global settings class'''
+    POSTGRES_DRIVER: str
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
     POSTGRES_HOST: str
@@ -14,7 +15,7 @@ class Settings(BaseSettings):
     def database_url(self) -> str:
         '''Create url for database connection'''
         return (
-            f'postgresql+asyncpg://'
+            f'{self.POSTGRES_DRIVER}://'
             f'{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@'
             f'{self.POSTGRES_HOST}/{self.POSTGRES_DB}'
         )
